@@ -1,7 +1,120 @@
+// #include <algorithm>
+// #include <bitset>
+// #include <cstdint>
+// #include <iostream>
+// #include <set>
+
+
+// /*--------------------------------------------------------------------------*/
+// // Задание звучит так: 
+// // Напишите функцию, которая инвертирует только выбранные биты в участке памяти, 
+// // заданном указателем и длиной в байтах. 
+// // Способ выбора битов для инвертирования на ваше усмотрение.
+// /*--------------------------------------------------------------------------*/
+
+
+// // функция для инвертирования 
+// // принимает: указатель на начало (любого типа), длину в байтах, контейнер с индексами битов для инверсии
+// // используется std::set, потому, что значения в нем отсортированы и уникальны
+// // возвращает: bool - "успешно ли прошла операция?"
+// bool invert_bits(void *start_point, size_t size, const std::set<size_t> &idx) {
+
+//     // если индексов нет - ничего делать не нужно, возвращаем true
+//     if (idx.empty()) return true;
+//     // получаем наибольшее значение из списка индексов (последнее значение в сете)
+//     auto max_bit = *idx.rbegin();
+
+//     // если количество битов в инвертируемой последовательности
+//     // меньше, чем наибольший индекс - возвращаем false
+//     if (((size) * 8) <= max_bit) {
+//         std::cerr << "Index " << max_bit << " greater than bit sequence\n";
+//         return false;
+//     }
+
+//     // реинтерпретируем абстрактный участок памяти как последовательность байт
+//     uint8_t *start = static_cast<uint8_t*>(start_point);
+
+//     // проходим по всем индексам битов, которые нужно инвертировать
+//     for (auto id : idx) {
+//         // создаем маску для одного бита, смещенного на искомую позицию (без учета номера байта)
+//         uint8_t mask = 1u << (id % 8);
+//         // ищем байт, в котором нужно применить полученную маску 
+//         // (последовательность байтов мы расцениваем как единую сущность)
+//         auto position = (start) + (id / 8);
+//         // накладываем маску
+//         *position ^= mask; 
+//     }
+
+//     // все хорошо - возвращаем true
+//     return true;
+// }
+
+
+
+// // вспомогательная функция для отображения участка памяти в виде битов
+// void show_sequence(void *start_point, size_t size) {
+    
+//     // реинтерпретируем абстрактный участок памяти как последовательность байт
+//     uint8_t *start = static_cast<uint8_t*>(start_point);
+
+//     while (size) {
+//         // итерируемся задом наперед, поскольку биты считаются справа налево 
+//         std::cout << std::bitset<8>(*(start + size - 1));
+//         size--;
+//     }
+//     std::cout << std::endl;
+// }
+
+
+
+// int main() {
+
+//     // создаем последовательность байтов (имитируют участок памяти)
+// #if UINT64
+//     // используем для теста либо одно число (в данном примере большое 64-битное) 
+//     uint64_t x = 1234567890987654321; 
+//     uint64_t *seq = &x;
+//     // получаем размер последовательности в байтах
+//     size_t seq_size = sizeof(x);
+//     // std::cout << std::bitset<64>(*seq) << std::endl;
+// #else 
+//     // либо последовательность байтов (в данном примере из 8 байтов или 64 битов)
+//     // задаем размер последовательности
+//     constexpr size_t seq_size = 8;
+//     uint8_t seq[seq_size] = {15, 30, 45, 60, 75, 90, 105, 120};
+// #endif
+    
+//     // задаем индексы битов, которые нужно инвертировать 
+//     // (индексы считаются справа налево, от младшего бита к старшему)
+//     std::set<size_t> idx{0, 1, 2, 3, 4, 5, 6, 7, 32, 33, 34, 35, 36, 60, 61, 62, 63};
+
+//     // смотрим исходную последовательность битов
+//     show_sequence(seq, seq_size);
+//     // инвертируем
+//     bool success = invert_bits(seq, seq_size, idx);
+//     // если что то пошло не так - прерываем программу с ошибкой
+//     if (!success) {
+//         std::cerr << "Not success" << std::endl;
+//         return 1;
+//     }
+//     // смотрим получившуюся последовательность
+//     show_sequence(seq, seq_size);
+
+//     return 0;
+
+// }
+
+
+
+
+
+
 #include <algorithm>
 #include <bitset>
 #include <cstdint>
 #include <iostream>
+#include <thread>
+#include <vector>
 #include <set>
 
 
@@ -32,7 +145,7 @@ bool invert_bits(void *start_point, size_t size, const std::set<size_t> &idx) {
     }
 
     // реинтерпретируем абстрактный участок памяти как последовательность байт
-    uint8_t *start = reinterpret_cast<uint8_t*>(start_point);
+    uint8_t *start = static_cast<uint8_t*>(start_point);
 
     // проходим по всем индексам битов, которые нужно инвертировать
     for (auto id : idx) {
@@ -50,11 +163,67 @@ bool invert_bits(void *start_point, size_t size, const std::set<size_t> &idx) {
 }
 
 
+// многопоточная версия инверсии битов на случай большого списка индексов
+// обрабатываемый отрезок памяти не делится на части, поскольку нужный байт определяется на лету с помощью арифметики указателей
+// и требует сложной балансировки на случай, если значения индексов смещены в ту или иную сторону 
+// (например, если много индексов больше миллиона, и мало остальных)
+// на части делится сам список индексов
+bool invert_bits_multithreading(
+    void *start_point, 
+    size_t size, 
+    const std::set<size_t> &idx, 
+    const size_t min_job_size = 1000 // минимальное количество индексов, при котором имеет смысл запустить многопоточность
+) {
+
+    // если нужно обработать менее тысячи индексов - работаем в одном потоке
+    if (idx.size() < 1000) {
+        return invert_bits(start_point, size, idx);
+    }
+
+    // вычисляем возможное количество потоков
+    const size_t hardware_threads = std::thread::hardware_concurrency();
+    const size_t min_threads = 2;
+    const size_t num_threads = std::max(min_threads, hardware_threads);
+
+    // получаем размер частей, на которые нужно поделить список индексов
+    size_t part_size = idx.size() / num_threads;
+
+    // создаем вектор для хранения потоков
+    std::vector<std::thread> threads;
+    // делим список индексов на части и запускаем в отдельном потоке (кроме последней части)
+    // получаем итераторы списка индексов
+    auto begin = idx.begin();
+    auto end = idx.begin(); 
+    for (size_t i = 0; i < num_threads - 1; ++i) {
+        // смещаем итераторы списка индексов, чтобы получить отрезки размера part_size
+        std::advance(begin, i * part_size);
+        std::advance(end, (i + 1) * part_size);
+        // создаем сет, хранящий часть индексов
+        std::set<size_t> idx_partition{begin, end};
+        
+        // добавляем данные в поток, а поток в вектор
+        threads.emplace_back(invert_bits, start_point, size, idx_partition);
+    }
+    // получаем последнюю часть
+    std::set<size_t> idx_partition{end, idx.end()};
+    bool success = invert_bits(start_point, size, idx_partition);
+
+    // дожидаемся выполнения потоков 
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    // все прошло успешно
+    return success;
+
+}
+
+
 // вспомогательная функция для отображения участка памяти в виде битов
 void show_sequence(void *start_point, size_t size) {
     
     // реинтерпретируем абстрактный участок памяти как последовательность байт
-    uint8_t *start = reinterpret_cast<uint8_t*>(start_point);
+    uint8_t *start = static_cast<uint8_t*>(start_point);
 
     while (size) {
         // итерируемся задом наперед, поскольку биты считаются справа налево 
@@ -90,7 +259,7 @@ int main() {
     // смотрим исходную последовательность битов
     show_sequence(seq, seq_size);
     // инвертируем
-    bool success = invert_bits(seq, seq_size, idx);
+    bool success = invert_bits_multithreading(seq, seq_size, idx);
     // если что то пошло не так - прерываем программу с ошибкой
     if (!success) {
         std::cerr << "Not success" << std::endl;
