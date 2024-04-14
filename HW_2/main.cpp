@@ -70,7 +70,7 @@ bool invert_bits_multithreading(
 ) {
 
     // если нужно обработать менее тысячи индексов - работаем в одном потоке
-    if (idx.size() < 1000) {
+    if (idx.size() < min_job_size) {
         return invert_bits(start_point, size, idx);
     }
 
