@@ -10,10 +10,12 @@
 // MULTITHREADING - программа запускается многопоточно
 // По умолчанию программа тестируется на массиве из 8 байт в однопоточном режиме.
 
+#include <atomic>
 #include <algorithm>
 #include <bitset>
 #include <cstdint>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <vector>
 #include <set>
@@ -24,7 +26,7 @@
 // принимает: указатель на начало (любого типа), длину в байтах, контейнер с индексами битов для инверсии
 // используется std::set, потому, что значения в нем отсортированы и уникальны
 // возвращает: bool - "успешно ли прошла операция?"
-bool invert_bits(void *start_point, size_t size, const std::set<size_t> &idx) {
+bool invert_bits(void *start_point, size_t size, const std::set<size_t> &idx, std::mutex *mutex = nullptr) {
 
     // если индексов нет - ничего делать не нужно, возвращаем true
     if (idx.empty()) return true;
@@ -39,8 +41,9 @@ bool invert_bits(void *start_point, size_t size, const std::set<size_t> &idx) {
     }
 
     // реинтерпретируем абстрактный участок памяти как последовательность байт
+    // std::atomic<uint8_t> *start = static_cast<std::atomic<uint8_t>*>(start_point);
     uint8_t *start = static_cast<uint8_t*>(start_point);
-
+    
     // проходим по всем индексам битов, которые нужно инвертировать
     for (auto id : idx) {
         // создаем маску для одного бита, смещенного на искомую позицию (без учета номера байта)
@@ -49,6 +52,7 @@ bool invert_bits(void *start_point, size_t size, const std::set<size_t> &idx) {
         // (последовательность байтов мы расцениваем как единую сущность)
         auto position = (start) + (id / 8);
         // накладываем маску
+        if (mutex != nullptr) { std::lock_guard guard(*mutex); } // если многопоточная обработка - лочим мьютекс
         *position ^= mask; 
     }
 
@@ -76,8 +80,11 @@ bool invert_bits_multithreading(
 
     // вычисляем возможное количество потоков
     const size_t hardware_threads = std::thread::hardware_concurrency();
-    const size_t min_threads = 2;
-    const size_t num_threads = std::max(min_threads, hardware_threads);
+    const size_t max_threads = (hardware_threads == 0 ? 2 : hardware_threads);
+    const size_t num_threads = std::min(max_threads, (size + min_job_size - 1) / min_job_size);
+
+    // создаем мьютекс для защиты от состояния гонки при наложении маски в одном байте из разных потоков 
+    std::mutex mutex{};
 
     // получаем размер частей, на которые нужно поделить список индексов
     size_t part_size = idx.size() / num_threads;
@@ -95,12 +102,13 @@ bool invert_bits_multithreading(
         // создаем сет, хранящий часть индексов
         std::set<size_t> idx_partition{begin, end};
         
-        // добавляем данные в поток, а поток в вектор
-        threads.emplace_back(invert_bits, start_point, size, idx_partition);
+        // добавляем данные в поток, а поток в вектор (в функции указываем режим многопоточности)
+        threads.emplace_back(invert_bits, start_point, size, idx_partition, &mutex);
     }
     // получаем последнюю часть
     std::set<size_t> idx_partition{end, idx.end()};
-    bool success = invert_bits(start_point, size, idx_partition);
+    // (в функции указываем режим многопоточности)
+    bool success = invert_bits(start_point, size, idx_partition, &mutex);
 
     // дожидаемся выполнения потоков 
     for (auto& t : threads) {
