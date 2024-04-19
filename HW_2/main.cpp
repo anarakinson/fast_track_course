@@ -28,6 +28,7 @@
 // возвращает: bool - "успешно ли прошла операция?"
 bool invert_bits(void *start_point, size_t size, const std::set<size_t> &idx, std::mutex *mutex = nullptr) {
 
+    std::cout << std::this_thread::get_id() << std::endl;
     // если индексов нет - ничего делать не нужно, возвращаем true
     if (idx.empty()) return true;
     // получаем наибольшее значение из списка индексов (последнее значение в сете)
