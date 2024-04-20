@@ -6,8 +6,8 @@
 
 // вспомогательная функция для вывода размера и содержимого списка
 template <typename T>
-void show_list(const List<T> &list) {
-    std::cout << "\nList size: " << list.size() << std::endl;
+void show_list(const List<T> &list, const std::string &idx) {
+    std::cout << "\nList " << idx << " size: " << list.size() << std::endl;
     for (int i = 0; i < list.size(); ++i) {
         auto val = list.at(i);
         std::cout << val->data << " ";
@@ -40,17 +40,17 @@ int main() {
 
 
     //----------------------------------------------------------------------------
-    // создадим второй лист, чтобы проверить, корректно ли происходит копирование
+    // создадим второй лист, проверить, корректно ли происходит копирование
     List<std::string> list2 = list;
-    show_list(list2);
+    show_list(list2, "copied");
 
     list2.push_front("A");
     list2.pop_front();
     
     //----------------------------------------------------------------------------
-    // создадим третий лист, чтобы проверить, корректно ли происходит перемещение
+    // создадим третий лист, проверить, корректно ли происходит перемещение
     List<std::string> list3 = std::move(list2);
-    show_list(list3);
+    show_list(list3, "moved");
 
     list3.push_front("A");
     list3.pop_front();
@@ -63,7 +63,7 @@ int main() {
     list.insert("world", list.size());
 
     // смотрим получившийся лист
-    show_list(list);
+    show_list(list, "default");
 
     // ищем индекс, который отсутствует в листе
     auto finded = list.at(-1);
@@ -88,7 +88,7 @@ int main() {
     list.erase(list.size() - 1);
 
     // смотрим результат
-    show_list(list);
+    show_list(list, "default");
 
     std::cout << "first node: " << list.first()->data << std::endl;
     std::cout << "last node: " << list.last()->data << std::endl;

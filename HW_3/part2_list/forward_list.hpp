@@ -35,6 +35,7 @@ public:
     Node* next = nullptr;
     // данные, которые хранит узел
     T data{};
+
 };
 
 
@@ -195,7 +196,7 @@ public:
         return ptr;
     }
 
-    // поиск ноды по значению (возвращает ноду)
+    // поиск ноды по значению (возвращает ноду или nullptr)
     Node<T> *find(T value) const {
         Node<T> *ptr = m_first;
         while ((ptr != nullptr) && (ptr->data != value)) {
