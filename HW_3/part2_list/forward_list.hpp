@@ -191,7 +191,7 @@ public:
     iterator find(T value) const {
         iterator ptr{m_first};
         while ((ptr != nullptr) && (*ptr != value)) {
-            ptr++;
+            ++ptr;
         }
         return ptr;
     }
@@ -217,6 +217,8 @@ private:
     }
 
     // служебная функция для поиска ноды по индексу
+    // поскольку функция служебная, здесь нет проверок на nullptr и корректность индекса - 
+    // всё это должно происходить там, где функция непосредственно используется
     Node<T> *find_index(size_t index) {
         auto node = m_first;
         for (size_t i = 0; i <= index - 1; ++i) {
@@ -242,7 +244,7 @@ public:
         m_node = m_node->next;
         return *this;
     }
-    iterator operator ++ () {
+    iterator &operator ++ () {
         m_node = m_node->next;
         return *this;
     }

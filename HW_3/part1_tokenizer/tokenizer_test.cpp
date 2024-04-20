@@ -41,7 +41,7 @@ void print_tokens(const std::vector<Token> &vec) {
 int main() {
 
     // проверим строку, где есть почти все виды токенов и не всегда есть пробелы между ними
-    std::string expr = "-1 +1*    2    - 123 *sqr(2) % (11 + 12)+(3-qwerty)";
+    std::string expr = "-1 +1*    2    - 123 *absolute(2) / sqr(2) % (qwerty123+12)+(3 - 1)";
 
     auto tokens = Tokenize(expr);
 

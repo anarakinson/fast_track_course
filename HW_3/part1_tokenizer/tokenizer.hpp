@@ -77,22 +77,24 @@ Token ParseName(const std::string& input, size_t& pos) {
     std::string word{};
     while (true) {
         if (
-            // если строка кончится или встретим пробельный символ - прерываем
+            // если строка кончится или попадется не буква и не цифра - прерываем цикл
             pos == input.size() - 1 || 
-            std::isspace(static_cast<unsigned char>(input[pos]))
+            !std::isalnum(static_cast<unsigned char>(input[pos]))
         ) {
-            return UnknownToken{word};
-        } else if (word == "abs") {
-            return AbsToken{};
-        } else if (word == "sqr") {
-            return Square{};
-        } else if (word == "min") {
-            return MinToken{};
+            break;
         }
         word += input[pos];
         ++pos;
     }
-    return UnknownToken{word};
+    if (word == "abs") {
+        return AbsToken{};
+    } else if (word == "sqr") {
+        return Square{};
+    } else if (word == "min") {
+        return MinToken{};
+    } else {
+        return UnknownToken{word};
+    }
 }
 
 
