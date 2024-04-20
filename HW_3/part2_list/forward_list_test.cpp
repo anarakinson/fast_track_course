@@ -7,22 +7,15 @@
 // вспомогательная функция для вывода размера и содержимого списка
 template <typename T>
 void show_list(const List<T> &list, const std::string &idx) {
-    std::cout << "\nList " << idx << " size: " << list.size() << std::endl;
-    for (int i = 0; i < list.size(); ++i) {
-        auto val = list.at(i);
-        std::cout << val->data << " ";
+    std::cout << "\nList '" << idx << "' size: " << list.size() << std::endl;
+    auto it = list.first();
+    while (it != nullptr) {
+        std::cout << *it << " ";
+        it++;
     }   
     std::cout << std::endl;
 }
 
-// вспомогательная функция для вывода результата поиска
-template <typename T>
-void show_finded(const Node<T> *finded) {
-    if (finded != nullptr)
-        std::cout << "find: " << finded->data << std::endl;
-    else 
-        std::cout << "Find nothing" << std::endl;
-}
 
 
 int main() {
@@ -63,23 +56,27 @@ int main() {
     list.insert("world", list.size());
 
     // смотрим получившийся лист
-    show_list(list, "default");
-
-    // ищем индекс, который отсутствует в листе
-    auto finded = list.at(-1);
-    show_finded(finded);
+    show_list(list, "basic");
 
     // ищем элемент, который есть в листе
-    finded = list.find("12");
-    show_finded(finded);
-
+    auto it = list.find("12");
+    if (it != nullptr) {
+        std::cout << *it << std::endl;
+    } else {
+        std::cout << "Not found" << std::endl;
+    }
+    
     // ищем элемент, который отсутствует в листе
-    finded = list.find("112");
-    show_finded(finded);
+    it = list.find("112");
+    if (it != nullptr) {
+        std::cout << *it << std::endl;
+    } else {
+        std::cout << "Not found" << std::endl;
+    }
 
     // смотрим элементы в конце и начале листа 
-    std::cout << "first node: " << list.first()->data << std::endl;
-    std::cout << "last node: " << list.last()->data << std::endl;
+    std::cout << "first node: " << *list.first() << std::endl;
+    std::cout << "last node: " << *list.last() << std::endl;
 
     // удаляем элементы из листа
     list.pop_front();
@@ -88,9 +85,9 @@ int main() {
     list.erase(list.size() - 1);
 
     // смотрим результат
-    show_list(list, "default");
+    show_list(list, "basic");
 
-    std::cout << "first node: " << list.first()->data << std::endl;
-    std::cout << "last node: " << list.last()->data << std::endl;
+    std::cout << "first node: " << *list.first() << std::endl;
+    std::cout << "last node: " << *list.last() << std::endl;
 
 }

@@ -46,16 +46,18 @@ public:
     List() = default;
     // конструктор копирования
     List(const List<T> &other) {
-        for (size_t i = other.size(); i > 0; --i) {
+        auto it = other.first();
+        while (it != nullptr) {
             // копируем из начала старого вектора и кладем в конец нового
-            push_front(other.at(i - 1)->data);
+            insert(*it, m_size);
+            ++it;
         }
     }
     // конструктор перемещения
     List(List<T>&& other) {
         while (other.first() != nullptr) {
             // перемещаем из начала старого вектора и кладем в конец нового
-            insert(std::move(other.first()->data), m_size);
+            insert(std::move(*other.first()), m_size);
             // старую ноду все равно нужно удалить
             other.pop_front();
         }
@@ -70,6 +72,8 @@ public:
             pop_front();
         }
     }
+
+    class iterator;
 
     // функция для добавления новых данных в начало списка
     void push_front(T data) {
@@ -119,6 +123,8 @@ public:
         // проверка на валидность индекса 
         // (нельзя добавить 10 индекс, если нет 9)
         if (index > m_size) { 
+            // пишем в стандартный вывод предупреждение и ничего не делаем
+            // как альтернатива, можно было бы использовать исключение
             error_out_of_size(index);
             return; 
         }
@@ -138,7 +144,7 @@ public:
             return;
         }
         // находим значение по индексу и следующее
-        auto prev = at(index);
+        auto prev = find_index(index - 1);
         auto next = prev->next;
         // создаем ноду
         auto current = new Node<T>;
@@ -154,6 +160,8 @@ public:
     void erase(size_t index) {
         // проверка на валидность индекса
         if (index >= m_size) { 
+            // пишем в стандартный вывод предупреждение и ничего не делаем
+            // как альтернатива, можно было бы использовать исключение
             error_out_of_size(index);
             return; 
         }
@@ -165,7 +173,7 @@ public:
         // уменьшаем размер
         --m_size;
         // находим элемент по индексу и соседей cпереди и сзади
-        auto prev = at(index - 1);
+        auto prev = find_index(index - 1);
         auto current = prev->next;
         auto next = current->next;
         // удаляем текущий элемент и соединяем его соседей между собой
@@ -179,28 +187,11 @@ public:
     }
 
 
-    // поиск ноды по номеру (возвращает ноду)
-    Node<T> *at(size_t index) const {
-        // проверка на валидность индекса
-        if (index >= m_size) { 
-            error_out_of_size(index);
-            return nullptr; 
-        }
-        
-        Node<T> *ptr = m_first;
-        while (ptr != nullptr) {
-            if (!index) { break; }
-            ptr = ptr->next;
-            --index;
-        }
-        return ptr;
-    }
-
-    // поиск ноды по значению (возвращает ноду или nullptr)
-    Node<T> *find(T value) const {
-        Node<T> *ptr = m_first;
-        while ((ptr != nullptr) && (ptr->data != value)) {
-            ptr = ptr->next;
+    // поиск по значению (возвращает итератор)
+    iterator find(T value) const {
+        iterator ptr{m_first};
+        while ((ptr != nullptr) && (*ptr != value)) {
+            ptr++;
         }
         return ptr;
     }
@@ -208,9 +199,9 @@ public:
 
     // размер списка
     size_t size() const { return m_size; }
-    // первая и последняя ноды
-    Node<T> *first() const { return m_first; }
-    Node<T> *last() const { return m_last; }
+    // итератор на первую и последнюю ноды
+    iterator first() const { return iterator{m_first}; }
+    iterator last() const { return iterator{m_last}; }
 
 private:
     // указатели на первую и последнюю ноды 
@@ -225,5 +216,52 @@ private:
         std::cerr << "WARNING: index " << static_cast<int64_t>(index) << " (" << index << ") is out of size " << m_size << "\n"; 
     }
 
+    // служебная функция для поиска ноды по индексу
+    Node<T> *find_index(size_t index) {
+        auto node = m_first;
+        for (size_t i = 0; i <= index - 1; ++i) {
+            node = node->next;
+        } 
+        return node;
+    }
+
 };
 
+
+// итератор для безопасного перебора нод 
+template <typename T>
+class List<T>::iterator {
+public:
+    // дефолтный конструктор
+    iterator() = default;
+    // конструктор по значению сохраняет внутри указанную ноду
+    explicit iterator(Node<T> *node) : m_node{node} {}
+
+    // операторы инкремента
+    iterator &operator ++ (int) {
+        m_node = m_node->next;
+        return *this;
+    }
+    iterator operator ++ () {
+        m_node = m_node->next;
+        return *this;
+    }
+    
+    // оператор разыменования возвращает значение, хранящееся в ноде
+    T &operator * () {
+        return m_node->data;
+    }
+    // операторы сравнения с нодой
+    bool operator == (Node<T> *other) {
+        return m_node == other;
+    }
+    bool operator != (Node<T> *other) {
+        return m_node != other;
+    }
+    
+
+private:
+    // хранящаяся в итераторе нода
+    Node<T> *m_node = nullptr; 
+
+};
