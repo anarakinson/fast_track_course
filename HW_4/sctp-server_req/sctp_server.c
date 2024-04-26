@@ -42,6 +42,8 @@ int main(int argc, char** argv) {
     struct sctp_sndrcvinfo sndrcvinfo;
     int opt = 1;
     int addrlen = sizeof(address);
+    
+    // создаем буфер
     char buffer[BUFFER_SIZE] = {0};
 
     // создаем дескриптор сокета в режиме SCTP
