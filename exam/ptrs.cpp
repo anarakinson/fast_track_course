@@ -20,10 +20,10 @@ int main() {
 
     // берем указатель на нулевой элемент
     int *x = array;
-    std::cout << *x << std::endl;
+    std::cout << "x[0]: " << *x << std::endl;
     // прибавляем четыре
     x += 4;
     // получаем четвертый элемент
-    std::cout << *x << std::endl;
+    std::cout << "x[4]: " << *x << std::endl;
 
 }
