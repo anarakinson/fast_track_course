@@ -32,7 +32,7 @@ int main(int argc, char const** argv) {
     int port = 9999;
     if (argc >= 3) { port = atoi(argv[3]); }
 
-    printf("Run client on: %s:%d\n", address, port);
+    printf("Send data to: %s:%d\n", address, port);
     
     // создаем переменные для работы сокета
     int status;
